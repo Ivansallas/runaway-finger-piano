@@ -42,6 +42,14 @@ class HandTrackerRuleTests(unittest.TestCase):
 
         self.assertFalse(HandTracker.is_finger_pressed(landmarks, 1, "Right"))
 
+    def test_non_thumb_uses_adaptive_margin_to_avoid_small_jitter(self):
+        landmarks = [landmark() for _ in range(21)]
+        landmarks[0] = landmark(x=0.10, y=0.10)
+        landmarks[8] = landmark(y=0.49)
+        landmarks[6] = landmark(y=0.50)
+
+        self.assertFalse(HandTracker.is_finger_pressed(landmarks, 1, "Right"))
+
 
 class ModelDownloaderTests(unittest.TestCase):
     @patch("builtins.print")

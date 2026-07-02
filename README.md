@@ -1,12 +1,12 @@
 
-# 🎹 Runaway - Finger Piano (Modular HUD Edition)
+# 🎹 Music - Finger Piano (Modular HUD Edition)
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer_Vision-green?style=flat-square&logo=opencv)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand_Tracking-orange?style=flat-square)
 ![Pygame](https://img.shields.io/badge/Pygame-Audio_Engine-yellow?style=flat-square)
 
-Um piano virtual tocado no ar através de visão computacional! Este projeto permite que você toque a introdução de **"Runaway" do Kanye West** utilizando apenas os movimentos dos seus dedos em frente à webcam.
+Um piano virtual tocado no ar através de visão computacional! Este projeto permite que você toque a introdução de **"PlayList de Musicas"** utilizando apenas os movimentos dos seus dedos em frente à webcam.
 
 
 ## Requisitos
@@ -36,6 +36,11 @@ pip install -r requirements.txt
 
 ```bash
 python main.py
+```
+Se você tiver mais de uma câmera, escolha o índice explicitamente:
+
+```bash
+python main.py --camera-index 1
 ```
 
 Modo demo, sem camera:

@@ -13,6 +13,22 @@ def load_hand_landmarks_connections():
 class UIRenderer:
 
     @staticmethod
+    def draw_panel(frame, x, y, w, h, border_color, alpha=0.45, border_thickness=1):
+        UIRenderer.draw_alpha_rect(frame, x, y, w, h, (0, 0, 0), alpha)
+        cv2.rectangle(
+            frame,
+            (x, y),
+            (x + w, y + h),
+            border_color,
+            border_thickness,
+            cv2.LINE_AA,
+        )
+
+    @staticmethod
+    def draw_text(frame, text, x, y, font, scale, color, thickness=1):
+        cv2.putText(frame, text, (x, y), font, scale, color, thickness, cv2.LINE_AA)
+
+    @staticmethod
     def wrap_text(text, max_chars):
         words = text.split()
         lines = []
@@ -52,11 +68,42 @@ class UIRenderer:
         x, y = int(30 * s), int(30 * s)
         pw, ph = int(360 * s), int(80 * s)
 
-        UIRenderer.draw_alpha_rect(frame, x, y, pw, ph, (0,0,0), 0.5)
-        cv2.putText(frame, "RUNAWAY", (x + int(20*s), y + int(40*s)), cv2.FONT_HERSHEY_DUPLEX, 1.3 * s, (255,255,255), max(1, int(2*s)), cv2.LINE_AA)
-        cv2.putText(frame, "HUD EDITION", (x + int(225*s), y + int(35*s)), cv2.FONT_HERSHEY_SIMPLEX, 0.4 * s, Config.ACCENT_GOLD, 1, cv2.LINE_AA)
-        cv2.putText(frame, "Kanye West | Finger Piano", (x + int(20*s), y + int(65*s)), cv2.FONT_HERSHEY_SIMPLEX, 0.45 * s, (200,200,200), 1, cv2.LINE_AA)
-        cv2.line(frame, (x + int(20*s), y + int(75*s)), (x + pw - int(20*s), y + int(75*s)), Config.ACCENT_GOLD, max(1, int(1*s)))
+        UIRenderer.draw_panel(frame, x, y, pw, ph, Config.ACCENT_GOLD, 0.5)
+        UIRenderer.draw_text(
+            frame,
+            "RUNAWAY",
+            x + int(20 * s),
+            y + int(40 * s),
+            cv2.FONT_HERSHEY_DUPLEX,
+            1.3 * s,
+            (255, 255, 255),
+            max(1, int(2 * s)),
+        )
+        UIRenderer.draw_text(
+            frame,
+            "HUD EDITION",
+            x + int(225 * s),
+            y + int(35 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4 * s,
+            Config.ACCENT_GOLD,
+        )
+        UIRenderer.draw_text(
+            frame,
+            "Kanye West | Finger Piano",
+            x + int(20 * s),
+            y + int(65 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45 * s,
+            (200, 200, 200),
+        )
+        cv2.line(
+            frame,
+            (x + int(20 * s), y + int(75 * s)),
+            (x + pw - int(20 * s), y + int(75 * s)),
+            Config.ACCENT_GOLD,
+            max(1, int(1 * s)),
+        )
 
     @staticmethod
     def draw_tracking_status(frame, hand_detected, w, h):
@@ -66,10 +113,7 @@ class UIRenderer:
         status_text = "MAO DETECTADA" if hand_detected else "AGUARDANDO MAO"
         status_color = (110, 220, 140) if hand_detected else (120, 120, 220)
 
-        UIRenderer.draw_alpha_rect(frame, x0, y0, pw, ph, (0, 0, 0), 0.45)
-        cv2.rectangle(
-            frame, (x0, y0), (x0 + pw, y0 + ph), status_color, max(1, int(1 * s))
-        )
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, status_color)
         cv2.circle(
             frame,
             (x0 + int(18 * s), y0 + ph // 2),
@@ -96,23 +140,15 @@ class UIRenderer:
         x0 = (w - pw) // 2
         y0 = int(30 * s)
 
-        UIRenderer.draw_alpha_rect(frame, x0, y0, pw, ph, (0, 0, 0), 0.45)
-        cv2.rectangle(
-            frame,
-            (x0, y0),
-            (x0 + pw, y0 + ph),
-            Config.ACCENT_GOLD,
-            max(1, int(1 * s)),
-        )
-        cv2.putText(
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, Config.ACCENT_GOLD)
+        UIRenderer.draw_text(
             frame,
             text,
-            (x0 + int(18 * s), y0 + int(27 * s)),
+            x0 + int(18 * s),
+            y0 + int(27 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.48 * s,
             (235, 235, 235),
-            max(1, int(1 * s)),
-            cv2.LINE_AA,
         )
 
     @staticmethod
@@ -121,23 +157,15 @@ class UIRenderer:
         pw, ph = int(260 * s), int(164 * s)
         x0, y0 = w - pw - int(30 * s), int(180 * s)
 
-        UIRenderer.draw_alpha_rect(frame, x0, y0, pw, ph, (0, 0, 0), 0.45)
-        cv2.rectangle(
-            frame,
-            (x0, y0),
-            (x0 + pw, y0 + ph),
-            (110, 110, 110),
-            max(1, int(1 * s)),
-        )
-        cv2.putText(
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, (110, 110, 110))
+        UIRenderer.draw_text(
             frame,
             "CONTROLES DEMO",
-            (x0 + int(16 * s), y0 + int(24 * s)),
+            x0 + int(16 * s),
+            y0 + int(24 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.46 * s,
             (225, 225, 225),
-            max(1, int(1 * s)),
-            cv2.LINE_AA,
         )
 
         controls = [
@@ -180,47 +208,40 @@ class UIRenderer:
 
         pw, ph = int(720 * s), int(260 * s)
         x0, y0 = (w - pw) // 2, (h - ph) // 2
-        UIRenderer.draw_alpha_rect(frame, x0, y0, pw, ph, (0, 0, 0), 0.7)
-        cv2.rectangle(
-            frame,
-            (x0, y0),
-            (x0 + pw, y0 + ph),
-            (70, 110, 240),
-            max(1, int(2 * s)),
+        UIRenderer.draw_panel(
+            frame, x0, y0, pw, ph, (70, 110, 240), 0.7, max(1, int(2 * s))
         )
 
-        cv2.putText(
+        UIRenderer.draw_text(
             frame,
             "FALHA NA INICIALIZACAO",
-            (x0 + int(24 * s), y0 + int(48 * s)),
+            x0 + int(24 * s),
+            y0 + int(48 * s),
             cv2.FONT_HERSHEY_DUPLEX,
             0.95 * s,
             (255, 255, 255),
             max(1, int(2 * s)),
-            cv2.LINE_AA,
         )
 
         for index, line in enumerate(UIRenderer.wrap_text(message, 48)):
-            cv2.putText(
+            UIRenderer.draw_text(
                 frame,
                 line,
-                (x0 + int(24 * s), y0 + int((96 + index * 28) * s)),
+                x0 + int(24 * s),
+                y0 + int((96 + index * 28) * s),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.55 * s,
                 (220, 220, 220),
-                max(1, int(1 * s)),
-                cv2.LINE_AA,
             )
 
-        cv2.putText(
+        UIRenderer.draw_text(
             frame,
             "Pressione Q ou ESC para fechar",
-            (x0 + int(24 * s), y0 + ph - int(28 * s)),
+            x0 + int(24 * s),
+            y0 + ph - int(28 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5 * s,
             (180, 180, 180),
-            max(1, int(1 * s)),
-            cv2.LINE_AA,
         )
 
     @staticmethod
@@ -229,10 +250,17 @@ class UIRenderer:
         pw, ph = int(350 * s), int(80 * s)
         x0, y0 = w - pw - int(30 * s), int(30 * s)
 
-        UIRenderer.draw_alpha_rect(frame, x0, y0, pw, ph, (0,0,0), 0.5)
-        cv2.rectangle(frame, (x0, y0), (x0+pw, y0+ph), Config.ACCENT_GOLD, max(1, int(1*s)))
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, Config.ACCENT_GOLD, 0.5)
 
-        cv2.putText(frame, "SEQUENCE (Acerta a nota para avancar)", (x0 + int(15*s), y0 + int(25*s)), cv2.FONT_HERSHEY_SIMPLEX, 0.4 * s, (200,200,200), 1, cv2.LINE_AA)
+        UIRenderer.draw_text(
+            frame,
+            "SEQUENCE (Acerta a nota para avancar)",
+            x0 + int(15 * s),
+            y0 + int(25 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4 * s,
+            (200, 200, 200),
+        )
 
         seq_len = len(Config.RUNAWAY_SEQUENCE)
         for i in range(5):
@@ -245,7 +273,16 @@ class UIRenderer:
             thickness = max(1, int((2 if is_current else 1) * s))
 
             y_text = y0 + int(60*s) if is_current else y0 + int(55*s)
-            cv2.putText(frame, note, (x0 + int(20*s) + i * int(65*s), y_text), cv2.FONT_HERSHEY_DUPLEX, font_scale, color, thickness, cv2.LINE_AA)
+            UIRenderer.draw_text(
+                frame,
+                note,
+                x0 + int(20 * s) + i * int(65 * s),
+                y_text,
+                cv2.FONT_HERSHEY_DUPLEX,
+                font_scale,
+                color,
+                thickness,
+            )
 
     @staticmethod
     def draw_waveform(frame, wave_data, w, h):
@@ -253,7 +290,7 @@ class UIRenderer:
         pw, ph = int(360 * s), int(60 * s)
         x, y = int(30 * s), int(130 * s)
 
-        UIRenderer.draw_alpha_rect(frame, x, y, pw, ph, (0, 0, 0), 0.4)
+        UIRenderer.draw_panel(frame, x, y, pw, ph, (0, 0, 0), 0.4)
         if len(wave_data) < 2: return
 
         pts = np.array(wave_data[-360:], dtype=np.float32)

@@ -22,12 +22,18 @@ def load_vision_modules():
 
 class FingerPianoApp:
 
-    def __init__(self, demo_mode: bool = False, autoplay_demo: bool = False):
+    def __init__(
+        self,
+        demo_mode: bool = False,
+        autoplay_demo: bool = False,
+        camera_index: int = 0,
+    ):
         self.audio_engine = None
         self.hand_tracker = None
         self.cap = None
         self.demo_mode = demo_mode
         self.autoplay_demo = demo_mode and autoplay_demo
+        self.camera_index = camera_index
 
         if not self.demo_mode:
             AudioEngine = load_audio_engine()
@@ -37,10 +43,12 @@ class FingerPianoApp:
             ModelDownloader, HandTracker = load_vision_modules()
             ModelDownloader.ensure_model_exists()
             self.hand_tracker = HandTracker()
-            self.cap = cv2.VideoCapture(0)
+            self.cap = cv2.VideoCapture(self.camera_index)
 
             if not self.cap.isOpened():
-                raise RuntimeError("Câmera não encontrada!")
+                raise RuntimeError(
+                    f"Câmera não encontrada no índice {self.camera_index}!"
+                )
 
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAM_WIDTH)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAM_HEIGHT)
@@ -51,6 +59,31 @@ class FingerPianoApp:
         self.seq_idx = 0
         self.next_autoplay_at = 0.0
         self.wave_buf = [0.0] * 360
+
+    @staticmethod
+    def startup_error_message(error: Exception) -> str:
+        error_message = str(error)
+        lowered_message = error_message.lower()
+
+        if "áudio" in lowered_message or "audio" in lowered_message:
+            return (
+                f"{error_message}\n\n"
+                "Verifique se há um dispositivo de saída ativo e se o volume do sistema está habilitado."
+            )
+
+        if "câmera" in lowered_message or "camera" in lowered_message:
+            return (
+                f"{error_message}\n\n"
+                "Feche outros aplicativos que possam estar usando a webcam e tente novamente."
+            )
+
+        if "mediapipe" in lowered_message or "modelo" in lowered_message:
+            return (
+                f"{error_message}\n\n"
+                "Confira se há acesso à internet no primeiro uso e se o download do modelo não foi bloqueado."
+            )
+
+        return error_message
 
     def get_current_finger_notes(self):
         return Config.get_finger_notes(self.seq_idx)
@@ -278,14 +311,24 @@ def parse_args():
         action="store_true",
         help="no modo demo, toca a sequencia automaticamente",
     )
+    parser.add_argument(
+        "--camera-index",
+        type=int,
+        default=0,
+        help="indice da camera para abrir quando nao estiver em modo demo",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     try:
         args = parse_args()
-        app = FingerPianoApp(demo_mode=args.demo, autoplay_demo=args.autoplay)
+        app = FingerPianoApp(
+            demo_mode=args.demo,
+            autoplay_demo=args.autoplay,
+            camera_index=args.camera_index,
+        )
         app.run()
-    except RuntimeError as exc:
+    except Exception as exc:
         print(f"❌ {exc}")
-        show_startup_error(str(exc))
+        show_startup_error(FingerPianoApp.startup_error_message(exc))
