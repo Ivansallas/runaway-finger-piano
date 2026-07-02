@@ -1,11 +1,26 @@
 import os
 import urllib.request
+
 import cv2
 import numpy as np
-import mediapipe as mp
-from mediapipe.tasks.python.core.base_options import BaseOptions
-from mediapipe.tasks.python.vision import HandLandmarker, HandLandmarkerOptions, RunningMode
+
 from config import Config
+
+
+def load_mediapipe():
+    try:
+        import mediapipe as mp
+        from mediapipe.tasks.python.core.base_options import BaseOptions
+        from mediapipe.tasks.python.vision import (
+            HandLandmarker,
+            HandLandmarkerOptions,
+            RunningMode,
+        )
+    except ImportError as exc:
+        raise RuntimeError("MediaPipe nao esta disponivel no ambiente atual.") from exc
+
+    return mp, BaseOptions, HandLandmarker, HandLandmarkerOptions, RunningMode
+
 
 class ModelDownloader:
     @staticmethod
@@ -14,14 +29,18 @@ class ModelDownloader:
             return
         print("📥 Baixando modelo MediaPipe Hand Landmarker (~8 MB)...")
         try:
+            os.makedirs(os.path.dirname(Config.MODEL_PATH), exist_ok=True)
             urllib.request.urlretrieve(Config.MODEL_URL, Config.MODEL_PATH)
             print("✅ Modelo baixado com sucesso!")
         except Exception as e:
-            print(f"❌ Falha ao baixar modelo: {e}")
-            raise SystemExit(1)
+            raise RuntimeError(f"Falha ao baixar o modelo do MediaPipe: {e}") from e
+
 
 class HandTracker:
     def __init__(self):
+        _, BaseOptions, HandLandmarker, HandLandmarkerOptions, RunningMode = (
+            load_mediapipe()
+        )
         options = HandLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=Config.MODEL_PATH),
             running_mode=RunningMode.VIDEO,
@@ -30,12 +49,19 @@ class HandTracker:
             min_hand_presence_confidence=0.6,
             min_tracking_confidence=0.5,
         )
-        self.detector = HandLandmarker.create_from_options(options)
+        try:
+            self.detector = HandLandmarker.create_from_options(options)
+        except Exception as exc:
+            raise RuntimeError("Falha ao inicializar o rastreador de mao.") from exc
         self.frame_ts = 0
 
     def process_frame(self, frame: np.ndarray):
+        mp, _, _, _, _ = load_mediapipe()
         self.frame_ts += 33
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),
+        )
         return self.detector.detect_for_video(mp_image, self.frame_ts)
 
     @staticmethod
@@ -47,4 +73,5 @@ class HandTracker:
         return tip.y > pip.y - 0.02
 
     def close(self):
-        self.detector.close()
+        if hasattr(self, "detector") and self.detector is not None:
+            self.detector.close()
