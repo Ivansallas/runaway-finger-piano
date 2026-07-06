@@ -41,6 +41,26 @@ class ConfigTests(unittest.TestCase):
             Config.MUSIC_LIBRARY[1]["sequence"],
         )
 
+    def test_silent_night_notes_have_thumb_mapping(self):
+        self.assertEqual(Config.get_thumb_note(0, ["G5"]), "G5")
+        self.assertEqual(Config.get_thumb_note(0, ["B5"]), "B5")
+        self.assertEqual(Config.get_thumb_note(0, ["C6"]), "C6")
+        self.assertEqual(Config.get_thumb_note(0, ["D6"]), "D6")
+
+    def test_dragon_ball_notes_have_frequencies(self):
+        dragon_song = next(
+            song for song in Config.MUSIC_LIBRARY if song["name"] == "DRAGON BALL GT"
+        )
+        for note in dragon_song["sequence"]:
+            self.assertIn(note, Config.NOTE_FREQS)
+
+    def test_dragon_ball_high_notes_have_thumb_mapping(self):
+        self.assertEqual(Config.get_thumb_note(0, ["D5"]), "D5")
+        self.assertEqual(Config.get_thumb_note(0, ["F6"]), "F6")
+        self.assertEqual(Config.get_thumb_note(0, ["G6"]), "G6")
+        self.assertEqual(Config.get_thumb_note(0, ["A6"]), "A6")
+        self.assertEqual(Config.get_thumb_note(0, ["F7"]), "F7")
+
 
 if __name__ == "__main__":
     unittest.main()

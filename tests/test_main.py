@@ -126,6 +126,28 @@ class DemoModeFlowTests(unittest.TestCase):
         self.assertIsNone(triggered_finger)
         self.assertEqual(app.seq_idx, 0)
 
+    def test_apply_demo_autoplay_starts_silent_night(self):
+        app = FingerPianoApp(demo_mode=True, autoplay_demo=True)
+        app.song_idx = Config.get_song_index_by_id("silent_night")
+
+        triggered_finger = app.apply_demo_autoplay(
+            app.get_current_finger_notes(), now=1.0
+        )
+
+        self.assertEqual(triggered_finger, "THUMB")
+        self.assertEqual(app.seq_idx, 1)
+
+    def test_apply_demo_autoplay_starts_dragon_ball_gt(self):
+        app = FingerPianoApp(demo_mode=True, autoplay_demo=True)
+        app.song_idx = Config.get_song_index_by_id("DRAGON BALL")
+
+        triggered_finger = app.apply_demo_autoplay(
+            app.get_current_finger_notes(), now=1.0
+        )
+
+        self.assertEqual(triggered_finger, "THUMB")
+        self.assertEqual(app.seq_idx, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
