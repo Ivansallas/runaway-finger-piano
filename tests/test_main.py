@@ -5,6 +5,27 @@ from main import FingerPianoApp
 
 
 class DemoModeFlowTests(unittest.TestCase):
+
+    def test_handle_song_selection_changes_song_and_resets_progress(self):
+        app = FingerPianoApp(demo_mode=True)
+        app.seq_idx = 5
+        app.next_autoplay_at = 9.0
+
+        changed = app.handle_song_selection(ord("n"))
+
+        self.assertTrue(changed)
+        self.assertEqual(app.song_idx, 1)
+        self.assertEqual(app.seq_idx, 0)
+        self.assertEqual(app.next_autoplay_at, 0.0)
+
+    def test_handle_song_selection_wraps_on_previous(self):
+        app = FingerPianoApp(demo_mode=True)
+
+        changed = app.handle_song_selection(ord("b"))
+
+        self.assertTrue(changed)
+        self.assertEqual(app.song_idx, len(Config.MUSIC_LIBRARY) - 1)
+
     def test_handle_demo_toggle_turns_autoplay_on_and_schedules_next_step(self):
         app = FingerPianoApp(demo_mode=True, autoplay_demo=False)
 

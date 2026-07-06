@@ -1,5 +1,5 @@
 
-# 🎹 Music - Finger Piano (Modular HUD Edition)
+# 🎹 Music - Finger Piano (Playlist HUD Edition)
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer_Vision-green?style=flat-square&logo=opencv)
@@ -7,6 +7,8 @@
 ![Pygame](https://img.shields.io/badge/Pygame-Audio_Engine-yellow?style=flat-square)
 
 Um piano virtual tocado no ar através de visão computacional! Este projeto permite que você toque a introdução de **"PlayList de Musicas"** utilizando apenas os movimentos dos seus dedos em frente à webcam.
+
+Agora a HUD inclui uma playlist com multiplas musicas, e voce pode trocar a faixa em tempo real durante a execucao.
 
 
 ## Requisitos
@@ -31,8 +33,12 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+No VS Code, selecione sempre o interpretador do ambiente virtual do projeto antes de executar ou testar. Neste workspace, a configuracao local aponta para `.venv\Scripts\python.exe`.
+
 
 ## Execução
+
+Os comandos abaixo assumem que o terminal e o VS Code estao usando o interpretador do ambiente virtual do projeto.
 
 ```bash
 python main.py
@@ -67,12 +73,17 @@ Controles no modo demo:
 - `4`: anelar
 - `5`: minimo
 - `A`: liga ou desliga o autoplay durante a execucao
+- `B`: musica anterior da playlist
+- `N`: proxima musica da playlist
 
 Com `--autoplay`, a propria aplicacao toca automaticamente a proxima nota esperada da sequencia.
 Mesmo sem essa flag, voce pode ativar ou pausar o autoplay a qualquer momento pelo teclado no modo demo.
+Nos modos demo e normal, voce pode trocar de musica a qualquer momento usando `B` e `N`.
 
 
 ## Testes
+
+Rode os testes com o mesmo interpretador do ambiente virtual configurado no projeto.
 
 Validacao de sintaxe:
 
@@ -89,6 +100,7 @@ python -m unittest discover -s tests -v
 Observacoes:
 
 - O teste de audio pode ser pulado se pygame ou scipy nao estiverem disponiveis no ambiente atual.
+- Se `python main.py` falhar com erro de modulo ausente no Windows, confira se o VS Code nao voltou para o Python global em vez da `.venv` do projeto.
 - O teste completo da aplicacao principal continua sendo manual, porque depende de webcam, janela OpenCV e audio em tempo real.
 
 

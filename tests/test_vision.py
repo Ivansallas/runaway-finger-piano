@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 mediapipe_available = find_spec("mediapipe") is not None
 
+from config import Config
 from vision import HandTracker, ModelDownloader
 
 
@@ -44,8 +45,8 @@ class HandTrackerRuleTests(unittest.TestCase):
 
     def test_non_thumb_uses_adaptive_margin_to_avoid_small_jitter(self):
         landmarks = [landmark() for _ in range(21)]
-        landmarks[0] = landmark(x=0.10, y=0.10)
-        landmarks[8] = landmark(y=0.49)
+        landmarks[0] = landmark(x=0.10, y=0.47)
+        landmarks[8] = landmark(y=0.48)
         landmarks[6] = landmark(y=0.50)
 
         self.assertFalse(HandTracker.is_finger_pressed(landmarks, 1, "Right"))
@@ -96,6 +97,40 @@ class ModelDownloaderTests(unittest.TestCase):
     ):
         with self.assertRaises(RuntimeError):
             ModelDownloader.ensure_model_exists()
+
+    @patch("vision.shutil.copyfile")
+    @patch("vision.os.path.getsize", side_effect=[20_000, 20_000])
+    @patch("vision.os.path.exists", side_effect=[True, False])
+    @patch("vision.os.makedirs")
+    def test_get_runtime_model_path_copies_model_to_ascii_safe_temp_location(
+        self,
+        mock_makedirs,
+        _mock_exists,
+        _mock_getsize,
+        mock_copyfile,
+    ):
+        runtime_model_path = ModelDownloader.get_runtime_model_path()
+
+        mock_makedirs.assert_called_once()
+        mock_copyfile.assert_called_once_with(Config.MODEL_PATH, runtime_model_path)
+        self.assertTrue(runtime_model_path.endswith("hand_landmarker.task"))
+
+    @patch("vision.shutil.copyfile")
+    @patch("vision.os.path.getsize", side_effect=[20_000, 20_000, 20_000])
+    @patch("vision.os.path.exists", side_effect=[True, True])
+    @patch("vision.os.makedirs")
+    def test_get_runtime_model_path_reuses_cached_copy_when_sizes_match(
+        self,
+        mock_makedirs,
+        _mock_exists,
+        _mock_getsize,
+        mock_copyfile,
+    ):
+        runtime_model_path = ModelDownloader.get_runtime_model_path()
+
+        mock_makedirs.assert_called_once()
+        mock_copyfile.assert_not_called()
+        self.assertTrue(runtime_model_path.endswith("hand_landmarker.task"))
 
 
 if __name__ == "__main__":

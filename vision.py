@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 import urllib.request
 
 import cv2
@@ -35,6 +37,24 @@ class ModelDownloader:
         except Exception as e:
             raise RuntimeError(f"Falha ao baixar o modelo do MediaPipe: {e}") from e
 
+    @staticmethod
+    def get_runtime_model_path() -> str:
+        ModelDownloader.ensure_model_exists()
+
+        runtime_dir = os.path.join(tempfile.gettempdir(), "runaway_finger_piano")
+        runtime_model_path = os.path.join(runtime_dir, "hand_landmarker.task")
+
+        os.makedirs(runtime_dir, exist_ok=True)
+
+        source_size = os.path.getsize(Config.MODEL_PATH)
+        target_exists = os.path.exists(runtime_model_path)
+        target_size = os.path.getsize(runtime_model_path) if target_exists else -1
+
+        if not target_exists or target_size != source_size:
+            shutil.copyfile(Config.MODEL_PATH, runtime_model_path)
+
+        return runtime_model_path
+
 
 class HandTracker:
     def __init__(self):
@@ -42,7 +62,9 @@ class HandTracker:
             load_mediapipe()
         )
         options = HandLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=Config.MODEL_PATH),
+            base_options=BaseOptions(
+                model_asset_path=ModelDownloader.get_runtime_model_path()
+            ),
             running_mode=RunningMode.VIDEO,
             num_hands=1,
             min_hand_detection_confidence=0.6,

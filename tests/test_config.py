@@ -28,6 +28,19 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(Config.get_demo_finger("5"), "PINKY")
         self.assertIsNone(Config.get_demo_finger("x"))
 
+    def test_music_library_has_more_than_one_song(self):
+        self.assertGreaterEqual(len(Config.MUSIC_LIBRARY), 2)
+
+    def test_get_sequence_returns_selected_song_sequence(self):
+        self.assertEqual(
+            Config.get_sequence(0),
+            Config.MUSIC_LIBRARY[0]["sequence"],
+        )
+        self.assertEqual(
+            Config.get_sequence(1),
+            Config.MUSIC_LIBRARY[1]["sequence"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

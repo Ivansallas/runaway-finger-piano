@@ -71,7 +71,7 @@ class UIRenderer:
         UIRenderer.draw_panel(frame, x, y, pw, ph, Config.ACCENT_GOLD, 0.5)
         UIRenderer.draw_text(
             frame,
-            "RUNAWAY",
+            "MUSIC",
             x + int(20 * s),
             y + int(40 * s),
             cv2.FONT_HERSHEY_DUPLEX,
@@ -81,7 +81,7 @@ class UIRenderer:
         )
         UIRenderer.draw_text(
             frame,
-            "HUD EDITION",
+            "FINGER PIANO",
             x + int(225 * s),
             y + int(35 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -90,7 +90,7 @@ class UIRenderer:
         )
         UIRenderer.draw_text(
             frame,
-            "Kanye West | Finger Piano",
+            "Escolha uma musica e toque no ar",
             x + int(20 * s),
             y + int(65 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -134,6 +134,37 @@ class UIRenderer:
         )
 
     @staticmethod
+    def draw_autoplay_status(frame, autoplay_enabled, w, h):
+        if not autoplay_enabled:
+            return
+
+        s = w / 1280.0
+        pw, ph = int(220 * s), int(56 * s)
+        x0, y0 = w - pw - int(30 * s), int(168 * s)
+
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, Config.ACCENT_GOLD, 0.55)
+        UIRenderer.draw_text(
+            frame,
+            "AUTOPLAY ATIVO",
+            x0 + int(12 * s),
+            y0 + int(22 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.42 * s,
+            (230, 230, 230),
+            max(1, int(1 * s)),
+        )
+        UIRenderer.draw_text(
+            frame,
+            "GESTOS BLOQUEADOS",
+            x0 + int(12 * s),
+            y0 + int(44 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4 * s,
+            Config.ACCENT_GOLD,
+            max(1, int(1 * s)),
+        )
+
+    @staticmethod
     def draw_mode_banner(frame, text, w, h):
         s = w / 1280.0
         pw, ph = int(260 * s), int(42 * s)
@@ -152,9 +183,9 @@ class UIRenderer:
         )
 
     @staticmethod
-    def draw_demo_controls(frame, w, h, autoplay_enabled):
+    def draw_demo_controls(frame, w, h, autoplay_enabled, autoplay_playing=False):
         s = w / 1280.0
-        pw, ph = int(260 * s), int(164 * s)
+        pw, ph = int(260 * s), int(188 * s)
         x0, y0 = w - pw - int(30 * s), int(180 * s)
 
         UIRenderer.draw_panel(frame, x0, y0, pw, ph, (110, 110, 110))
@@ -190,16 +221,28 @@ class UIRenderer:
 
         autoplay_text = "Autoplay ligado" if autoplay_enabled else "Autoplay desligado"
         autoplay_color = (120, 220, 160) if autoplay_enabled else (180, 180, 180)
-        cv2.putText(
+        UIRenderer.draw_text(
             frame,
             autoplay_text,
-            (x0 + int(16 * s), y0 + int(146 * s)),
+            x0 + int(16 * s),
+            y0 + int(146 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.4 * s,
             autoplay_color,
             max(1, int(1 * s)),
-            cv2.LINE_AA,
         )
+
+        if autoplay_playing:
+            UIRenderer.draw_text(
+                frame,
+                "AUTO TOCANDO AGORA",
+                x0 + int(16 * s),
+                y0 + int(170 * s),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.4 * s,
+                Config.ACCENT_GOLD,
+                max(1, int(1 * s)),
+            )
 
     @staticmethod
     def draw_error_screen(frame, message, w, h):
@@ -245,7 +288,39 @@ class UIRenderer:
         )
 
     @staticmethod
-    def draw_sequence(frame, seq_idx, w, h):
+    def draw_song_selector(frame, songs, current_idx, w, h):
+        s = w / 1280.0
+        pw, ph = int(360 * s), int(128 * s)
+        x0, y0 = int(30 * s), int(205 * s)
+
+        UIRenderer.draw_panel(frame, x0, y0, pw, ph, Config.ACCENT_GOLD, 0.5)
+        UIRenderer.draw_text(
+            frame,
+            "PLAYLIST (B/N)",
+            x0 + int(15 * s),
+            y0 + int(25 * s),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.44 * s,
+            (210, 210, 210),
+        )
+
+        for idx, song in enumerate(songs):
+            is_selected = idx == current_idx
+            color = Config.ACCENT_GOLD if is_selected else (170, 170, 170)
+            prefix = ">" if is_selected else " "
+            UIRenderer.draw_text(
+                frame,
+                f"{prefix} {idx + 1}. {song['name']}",
+                x0 + int(15 * s),
+                y0 + int((48 + idx * 22) * s),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.43 * s,
+                color,
+                max(1, int(1 * s)),
+            )
+
+    @staticmethod
+    def draw_sequence(frame, song_name, sequence, seq_idx, w, h):
         s = w / 1280.0
         pw, ph = int(350 * s), int(80 * s)
         x0, y0 = w - pw - int(30 * s), int(30 * s)
@@ -254,7 +329,7 @@ class UIRenderer:
 
         UIRenderer.draw_text(
             frame,
-            "SEQUENCE (Acerta a nota para avancar)",
+            f"{song_name} | Proximas notas",
             x0 + int(15 * s),
             y0 + int(25 * s),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -262,10 +337,10 @@ class UIRenderer:
             (200, 200, 200),
         )
 
-        seq_len = len(Config.RUNAWAY_SEQUENCE)
+        seq_len = len(sequence)
         for i in range(5):
             idx = (seq_idx + i) % seq_len
-            note = Config.RUNAWAY_SEQUENCE[idx]
+            note = sequence[idx]
 
             is_current = (i == 0)
             color = Config.ACCENT_GOLD if is_current else (150,150,150)

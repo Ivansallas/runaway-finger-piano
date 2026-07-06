@@ -32,7 +32,7 @@ class FingerPianoApp:
         self.hand_tracker = None
         self.cap = None
         self.demo_mode = demo_mode
-        self.autoplay_demo = demo_mode and autoplay_demo
+        self.autoplay_demo = autoplay_demo
         self.camera_index = camera_index
 
         if not self.demo_mode:
@@ -57,7 +57,9 @@ class FingerPianoApp:
         self.cooldowns = {k: 0.0 for k in Config.FINGER_KEYS}
         self.demo_flash_until = {k: 0.0 for k in Config.FINGER_KEYS}
         self.seq_idx = 0
+        self.song_idx = Config.get_song_index_by_id(Config.DEFAULT_SONG_ID)
         self.next_autoplay_at = 0.0
+        self.last_autoplay_note_at = 0.0
         self.wave_buf = [0.0] * 360
 
     @staticmethod
@@ -86,7 +88,31 @@ class FingerPianoApp:
         return error_message
 
     def get_current_finger_notes(self):
-        return Config.get_finger_notes(self.seq_idx)
+        return Config.get_finger_notes(self.seq_idx, self.get_current_sequence())
+
+    def get_current_song(self) -> dict:
+        return Config.MUSIC_LIBRARY[self.song_idx]
+
+    def get_current_sequence(self) -> list[str]:
+        return Config.get_sequence(self.song_idx)
+
+    def cycle_song(self, step: int):
+        self.song_idx = (self.song_idx + step) % len(Config.MUSIC_LIBRARY)
+        self.seq_idx = 0
+        self.next_autoplay_at = 0.0
+        self.last_autoplay_note_at = 0.0
+        self.cooldowns = {k: 0.0 for k in Config.FINGER_KEYS}
+        self.demo_flash_until = {k: 0.0 for k in Config.FINGER_KEYS}
+
+    def handle_song_selection(self, pressed_key: int) -> bool:
+        key_char = chr(pressed_key).lower() if 0 <= pressed_key <= 255 else ""
+        if key_char == Config.NEXT_SONG_KEY:
+            self.cycle_song(1)
+            return True
+        if key_char == Config.PREV_SONG_KEY:
+            self.cycle_song(-1)
+            return True
+        return False
 
     def create_demo_frame(self):
         frame = np.zeros((Config.CAM_HEIGHT, Config.CAM_WIDTH, 3), dtype=np.uint8)
@@ -109,9 +135,8 @@ class FingerPianoApp:
             [np.sin(2 * np.pi * freq * t / Config.SAMPLE_RATE) for t in range(40)]
         )
 
-        target_note = Config.RUNAWAY_SEQUENCE[
-            self.seq_idx % len(Config.RUNAWAY_SEQUENCE)
-        ]
+        current_sequence = self.get_current_sequence()
+        target_note = current_sequence[self.seq_idx % len(current_sequence)]
         if note == target_note:
             self.seq_idx += 1
 
@@ -127,9 +152,8 @@ class FingerPianoApp:
         return finger
 
     def get_target_finger(self, finger_notes: dict[str, str]) -> str | None:
-        target_note = Config.RUNAWAY_SEQUENCE[
-            self.seq_idx % len(Config.RUNAWAY_SEQUENCE)
-        ]
+        current_sequence = self.get_current_sequence()
+        target_note = current_sequence[self.seq_idx % len(current_sequence)]
         for finger, note in finger_notes.items():
             if note == target_note:
                 return finger
@@ -145,6 +169,7 @@ class FingerPianoApp:
 
         self.trigger_note(finger, finger_notes, now)
         self.next_autoplay_at = now + Config.DEMO_AUTOPLAY_SEC
+        self.last_autoplay_note_at = now
         return finger
 
     def handle_demo_toggle(self, pressed_key: int, now: float) -> bool:
@@ -154,11 +179,12 @@ class FingerPianoApp:
 
         self.autoplay_demo = not self.autoplay_demo
         self.next_autoplay_at = now if self.autoplay_demo else 0.0
+        self.last_autoplay_note_at = 0.0
         return True
 
     def run(self):
         print(
-            "\n🎵 RUNAWAY - HUD Edition iniciada! Aperte Q na janela de vídeo para sair.\n"
+            "\n🎵 Music - Finger Piano iniciada! Aperte Q na janela de vídeo para sair.\n"
         )
 
         cv2.namedWindow(Config.WINDOW_TITLE, cv2.WINDOW_NORMAL)
@@ -189,10 +215,6 @@ class FingerPianoApp:
                     for finger, flash_until in self.demo_flash_until.items():
                         active_fingers[finger] = now < flash_until
 
-                    autoplay_finger = self.apply_demo_autoplay(finger_notes, now)
-                    if autoplay_finger is not None:
-                        active_fingers[autoplay_finger] = True
-
                 if self.hand_tracker is not None:
                     result = self.hand_tracker.process_frame(frame)
                     hand_detected = bool(result.hand_landmarks)
@@ -212,7 +234,8 @@ class FingerPianoApp:
                             active_fingers[finger] = is_pressed
 
                             if (
-                                is_pressed
+                                not self.autoplay_demo
+                                and is_pressed
                                 and not self.prev_pressed[finger]
                                 and now > self.cooldowns[finger]
                             ):
@@ -224,20 +247,59 @@ class FingerPianoApp:
                             display_frame, landmarks, active_fingers, finger_notes, w, h
                         )
 
+                autoplay_finger = self.apply_demo_autoplay(finger_notes, now)
+                if autoplay_finger is not None:
+                    active_fingers[autoplay_finger] = True
+
+                if self.autoplay_demo:
+                    for finger in Config.FINGER_KEYS:
+                        self.prev_pressed[finger] = False
+
                 self.wave_buf = self.wave_buf[-360:]
                 if len(self.wave_buf) < 360:
                     self.wave_buf = [0.0] * (360 - len(self.wave_buf)) + self.wave_buf
 
+                current_song = self.get_current_song()
+                current_sequence = self.get_current_sequence()
+
                 UIRenderer.draw_title(display_frame, w, h)
                 UIRenderer.draw_tracking_status(display_frame, hand_detected, w, h)
+                UIRenderer.draw_autoplay_status(
+                    display_frame,
+                    self.autoplay_demo,
+                    w,
+                    h,
+                )
                 if self.demo_mode:
                     UIRenderer.draw_mode_banner(
                         display_frame, "MODO DEMO SEM CAMERA", w, h
                     )
-                    UIRenderer.draw_demo_controls(
-                        display_frame, w, h, self.autoplay_demo
+                    is_autoplay_playing = (
+                        self.autoplay_demo
+                        and (now - self.last_autoplay_note_at) < Config.COOLDOWN_SEC
                     )
-                UIRenderer.draw_sequence(display_frame, self.seq_idx, w, h)
+                    UIRenderer.draw_demo_controls(
+                        display_frame,
+                        w,
+                        h,
+                        self.autoplay_demo,
+                        is_autoplay_playing,
+                    )
+                UIRenderer.draw_song_selector(
+                    display_frame,
+                    Config.MUSIC_LIBRARY,
+                    self.song_idx,
+                    w,
+                    h,
+                )
+                UIRenderer.draw_sequence(
+                    display_frame,
+                    current_song["name"],
+                    current_sequence,
+                    self.seq_idx,
+                    w,
+                    h,
+                )
                 UIRenderer.draw_waveform(display_frame, self.wave_buf, w, h)
                 UIRenderer.draw_piano_keys(
                     display_frame, active_fingers, finger_notes, h, w
@@ -245,9 +307,9 @@ class FingerPianoApp:
 
                 s = w / 1280.0
                 help_text = (
-                    "Teclas 1-5 simulam os dedos | A alterna autoplay | Q sai"
+                    "Teclas 1-5 dedos | A autoplay | B/N trocam musica | Q sai"
                     if self.demo_mode
-                    else "Dobre os dedos para tocar  |  Pressione 'Q' para sair"
+                    else "Dobre os dedos para tocar | A autoplay (bloqueia gestos) | B/N trocam musica | Q sai"
                 )
                 cv2.putText(
                     display_frame,
@@ -262,8 +324,9 @@ class FingerPianoApp:
 
                 cv2.imshow(Config.WINDOW_TITLE, display_frame)
                 pressed_key = cv2.waitKey(1) & 0xFF
+                self.handle_song_selection(pressed_key)
+                autoplay_toggled = self.handle_demo_toggle(pressed_key, now)
                 if self.demo_mode:
-                    autoplay_toggled = self.handle_demo_toggle(pressed_key, now)
                     if not autoplay_toggled:
                         triggered_finger = self.apply_demo_input(
                             pressed_key, finger_notes, now

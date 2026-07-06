@@ -19,7 +19,7 @@ class Config:
     MODEL_URL: str = (
         "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
     )
-    WINDOW_TITLE: str = "RUNAWAY - Finger Piano (HUD Edition)"
+    WINDOW_TITLE: str = "Music - Finger Piano (HUD Edition)"
 
     NOTE_FREQS = {
         "C4": 261.63,
@@ -81,6 +81,156 @@ class Config:
         "G#5",
     ]
 
+    MUSIC_LIBRARY = [
+        {
+            "id": "runaway",
+            "name": "Runaway - Kanye West",
+            "sequence": RUNAWAY_SEQUENCE,
+        },
+        {
+            "id": "pulse",
+            "name": "Pulse Drive",
+            "sequence": [
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+                "G#5",
+                "A5",
+                "C#6",
+                "D#6",
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+            ],
+        },
+        {
+            "id": "echo",
+            "name": "Echo Lights",
+            "sequence": [
+                "E6",
+                "E5",
+                "D#6",
+                "D#5",
+                "C#6",
+                "C#5",
+                "A5",
+                "G#5",
+                "A5",
+                "C#6",
+            ],
+        },
+        # ===== Domínio Público =====
+        {
+            "id": "ode_to_joy",
+            "name": "Ode to Joy",
+            "sequence": [
+                "E5",
+                "E5",
+                "A5",
+                "C#6",
+                "C#6",
+                "A5",
+                "E5",
+                "D#5",
+                "C#5",
+                "C#5",
+                "D#5",
+                "E5",
+            ],
+        },
+        {
+            "id": "amazing_grace",
+            "name": "Amazing Grace",
+            "sequence": [
+                "A5",
+                "C#6",
+                "E6",
+                "C#6",
+                "A5",
+                "G#5",
+                "A5",
+                "C#6",
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+            ],
+        },
+        {
+            "id": "greensleeves",
+            "name": "Greensleeves",
+            "sequence": [
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+                "C#6",
+                "D#6",
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+                "G#5",
+                "A5",
+            ],
+        },
+        {
+            "id": "scarborough",
+            "name": "Scarborough Fair",
+            "sequence": [
+                "A5",
+                "C#6",
+                "D#6",
+                "E6",
+                "D#6",
+                "C#6",
+                "A5",
+                "G#5",
+                "A5",
+                "C#6",
+                "A5",
+                "E5",
+            ],
+        },
+        {
+            "id": "frere_jacques",
+            "name": "Frère Jacques",
+            "sequence": [
+                "A5",
+                "C#6",
+                "D#6",
+                "A5",
+                "A5",
+                "C#6",
+                "D#6",
+                "A5",
+                "D#6",
+                "E6",
+                "C#6",
+                "A5",
+            ],
+        },
+        {
+            "id": "twinkle",
+            "name": "Twinkle Twinkle Little Star",
+            "sequence": [
+                "A5",
+                "A5",
+                "E6",
+                "E6",
+                "C#6",
+                "C#6",
+                "A5",
+                "G#5",
+                "G#5",
+                "C#6",
+                "C#6",
+                "A5",
+            ],
+        },
+    ]
     ACCENT_GOLD = (50, 180, 255)
     NOTE_COLORS = {
         "THUMB": (80, 80, 255),
@@ -101,22 +251,50 @@ class Config:
         "5": "PINKY",
     }
     DEMO_AUTOPLAY_TOGGLE_KEY = "a"
+    NEXT_SONG_KEY = "n"
+    PREV_SONG_KEY = "b"
+
+    THUMB_BY_TARGET_NOTE = {
+        "E6": "E5",
+        "E5": "E5",
+        "D#6": "D#5",
+        "D#5": "D#5",
+        "C#6": "C#5",
+        "C#5": "C#5",
+        "A5": "G#5",
+        "G#5": "G#5",
+    }
+
+    DEFAULT_SONG_ID = "runaway"
 
     @classmethod
-    def get_thumb_note(cls, seq_idx: int) -> str:
-        idx = seq_idx % len(cls.RUNAWAY_SEQUENCE)
-        if idx <= 15:
-            return "E5"
-        if idx <= 19:
-            return "D#5"
-        if idx <= 23:
-            return "C#5"
-        return "G#5"
+    def get_song_index_by_id(cls, song_id: str) -> int:
+        for idx, song in enumerate(cls.MUSIC_LIBRARY):
+            if song["id"] == song_id:
+                return idx
+        return 0
 
     @classmethod
-    def get_finger_notes(cls, seq_idx: int) -> dict[str, str]:
+    def get_sequence(cls, song_idx: int = 0) -> list[str]:
+        if not cls.MUSIC_LIBRARY:
+            return cls.RUNAWAY_SEQUENCE
+        safe_idx = song_idx % len(cls.MUSIC_LIBRARY)
+        return cls.MUSIC_LIBRARY[safe_idx]["sequence"]
+
+    @classmethod
+    def get_thumb_note(cls, seq_idx: int, sequence: list[str] | None = None) -> str:
+        active_sequence = sequence or cls.RUNAWAY_SEQUENCE
+        if not active_sequence:
+            return cls.BASE_FINGER_NOTES["THUMB"]
+        target_note = active_sequence[seq_idx % len(active_sequence)]
+        return cls.THUMB_BY_TARGET_NOTE.get(target_note, cls.BASE_FINGER_NOTES["THUMB"])
+
+    @classmethod
+    def get_finger_notes(
+        cls, seq_idx: int, sequence: list[str] | None = None
+    ) -> dict[str, str]:
         finger_notes = dict(cls.BASE_FINGER_NOTES)
-        finger_notes["THUMB"] = cls.get_thumb_note(seq_idx)
+        finger_notes["THUMB"] = cls.get_thumb_note(seq_idx, sequence)
         return finger_notes
 
     @classmethod
